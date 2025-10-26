@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Bouncing Balls</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 0 #ff4081;
+            letter-spacing: 2px;
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            background: #ff4081;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #ff79a6;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #ballCount {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid #ff4081;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            width: 120px;
+            text-align: center;
+        }
+        
+        #ballCount::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="container">
+        <h1>Bouncing Balls Fun!</h1>
+        <p>Click on the balls to change their colors! Add more balls or clear them using the buttons below.</p>
+        
+        <div class="controls">
+            <input type="number" id="ballCount" placeholder="Number of balls" min="1" max="100" value="20">
+            <button id="addBalls">Add Balls</button>
+            <button id="clearBalls">Clear All</button>
+            <button id="changeColors">Change All Colors</button>
+        </div>
+        
+        <p>Watch them bounce around and interact with each other!</p>
+    </div>
+    
+    <div class="footer">
+        Created with HTML, CSS, and JavaScript | Have fun!
+    </div>
+
+    <script>
+        // Get the canvas element and set its dimensions
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Array to store all balls
+        let balls = [];
+        
+        // Colors for the balls
+        const colors = [
+            '#FF4081', '#3F51B5', '#4CAF50', '#FFC107', 
+            '#9C27B0', '#00BCD4', '#FF5722', '#8BC34A',
+            '#E91E63', '#2196F3', '#FF9800', '#009688'
+        ];
+        
+        // Ball class
+        class Ball {
+            constructor(x, y, radius, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.dx = (Math.random() - 0.5) * 8;
+                this.dy = (Math.random() - 0.5) * 8;
+                this.gravity = 0.1;
+                this.friction = 0.99;
+            }
+            
+            // Draw the ball
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+                
+                // Add a shine effect
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fill();
+                ctx.closePath();
+            }
+            
+            // Update ball position
+            update() {
+                // Apply gravity
+                this.dy += this.gravity;
+                
+                // Apply friction
+                this.dx *= this.friction;
+                this.dy *= this.friction;
+                
+                // Bounce off walls
+                if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                    this.dx = -this.dx;
+                }
+                
+                if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                    this.dy = -this.dy;
+                    
+                    // Add some energy loss when hitting the ground
+                    if (this.y + this.radius > canvas.height) {
+                        this.dy *= 0.9;
+                    }
+                }
+                
+                // Update position
+                this.x += this.dx;
+                this.y += this.dy;
+                
+                this.draw();
+            }
+            
+            // Change color randomly
+            changeColor() {
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            // Check if a point is inside the ball
+            isPointInside(x, y) {
+                const distance = Math.sqrt((x - this.x) ** 2 + (y - this.y) ** 2);
+                return distance <= this.radius;
+            }
+        }
+        
+        // Create initial balls
+        function createBalls(count) {
+            for (let i = 0; i < count; i++) {
+                const radius = Math.random() * 30 + 15;
+                const x = Math.random() * (canvas.width - radius * 2) + radius;
+                const y = Math.random() * (canvas.height - radius * 2) + radius;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                balls.push(new Ball(x, y, radius, color));
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw all balls
+            balls.forEach(ball => {
+                ball.update();
+            });
+        }
+        
+        // Handle click events on balls
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Check if any ball was clicked
+            for (let i = balls.length - 1; i >= 0; i--) {
+                if (balls[i].isPointInside(x, y)) {
+                    balls[i].changeColor();
+                    // Give the ball a little push
+                    balls[i].dx = (Math.random() - 0.5) * 10;
+                    balls[i].dy = (Math.random() - 0.5) * 10;
+                    break;
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        // Button event handlers
+        document.getElementById('addBalls').addEventListener('click', () => {
+            const count = parseInt(document.getElementById('ballCount').value) || 10;
+            createBalls(count);
+        });
+        
+        document.getElementById('clearBalls').addEventListener('click', () => {
+            balls = [];
+        });
+        
+        document.getElementById('changeColors').addEventListener('click', () => {
+            balls.forEach(ball => {
+                ball.changeColor();
+            });
+        });
+        
+        // Initialize with some balls
+        createBalls(20);
+        
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
